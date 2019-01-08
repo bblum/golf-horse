@@ -26,7 +26,7 @@ newLine = "!"
 newChap = "@"
 maxPrefix = 4
 packWidth = 5
-prefixFactor = 2 -- allows e.g. 4 to really mean 8/12/etc; useful for wordlist.asc
+prefixFactor = 1 -- allows e.g. 4 to really mean 8/12/etc; useful for wordlist.asc
 
 -- nb. 0s have to go in front of all actually prefixified stuff!
 siftPrefixes :: Int -> (String, [String]) -> (String, [String])
@@ -93,23 +93,24 @@ jsify chapters (buffer, numEscaped) =
     -- n = prefix length
     -- i = bit index into buffer
     -- q = "this chapter has no non-prefixified intro words" flag (e.g., 'q' chapter)
-    -- i'm not sure why this -1 is necessary to avoid bss-ol-bar iteration tbh :<
-    "for(q=i=n=c=0;i<" ++ show ((length buffer - numEscaped - 1) * 8) ++ ";i+=5){" ++
-    "r=i%8;" ++ -- offset of 5-bit chunk into current 8-byte buffer chara
-    "x=b.charCodeAt((i-r)/8)>>r&255>>r&31|(b.charCodeAt((i-r)/8+1)&15>>7-r)<<8-r;" ++
+    -- sometimes you needta subtract 1*8 from this bound to not bss-ol-bar; idk why :<
+    "for(q=i=n=c=0;i<" ++ show ((length buffer - numEscaped) * 8) ++ ";i+=5){" ++
+    "r=i%8;" ++ -- offset of 5-bit chunk into current 8-bit buffer chara
+    "j=(i-r)/8;" ++ -- 8-bit index into buffer
+    "x=b.charCodeAt(j)>>r&-1>>r&31|(b.charCodeAt(j+1)&15>>7-r)<<8-r;" ++
     "if(x<6){" ++ -- is one of the control charas? @ ! 1 2 3 4
-    "if(!x){c++;p='';q=1}" ++ -- increment chapter; reset prefix & maybe q chapter?
+    "if(!x){c+=q=1;p=''}" ++ -- increment chapter; reset prefix & maybe q chapter?
     "if(x>1){p='';n=" ++ golfPrefixLength ++ ";q++}" ++ -- begin parsing prefix
     "if(q<2)" ++ -- skip following if previously @ was followed immediately by 1/2/3/4
     "o+='\\n'+'" ++ chapters ++ "'[c]+p" ++ -- start printing new word w/chap.# & prefix
     "}else{" ++ -- parse normal alpha chara
     "w=String.fromCharCode(91+x);" ++ -- 'a' (ascii 97) minus 6 control characters
     "if(n){p+=w;if(!--n)o+=p}" ++ -- stash chara into prefix
-    "else{o+=w;q=0}" ++ -- no prefix active; emit it directly
+    "else o+=w;q=0" ++ -- no prefix active; emit it directly
     "}}console.log(o)"
 
 main = do
     wordlistFile <- fromMaybe (error "give filename pls") <$> listToMaybe <$> getArgs
     wordlist <- lines <$> readFile wordlistFile
     let chapters = nub $ map head $ sort wordlist -- nb. "[a..w] ++ [y]" for ten-hundred
-    putStrLn $ jsify chapters $ compress $ indexify $ groupOn head $ sort wordlist
+    putStr $ jsify chapters $ compress $ indexify $ groupOn head $ sort wordlist
