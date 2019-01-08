@@ -17,7 +17,7 @@ import System.Environment
 -- there's no more bc those 6 charas + the 26 alpha = 32, for a 5 bit pack
 
 -- example: wordlist "bar,foobar,foobaz,quux,quuux" could be encoded as
--- "@bar@@@@4foobar!az@@@@@@@@@@@3quux!ux"
+-- "@ar@@@@4oobar!z@@@@@@@@@@@2uux!ux"
 -- words that don't share prefixes with any other words must go at the beginning
 -- of their chapter, before any prefixed words, bc @ does double duty between
 -- advancing the chapter "number" and clearing the prefix
